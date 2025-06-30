@@ -1,0 +1,412 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 openapi: 3.0.3\
+info:\
+  title: Sales Automation Systems API\
+  version: 3.0.0\
+  description: |\
+    Real-time event tracking and webhook API for Sales Automation Systems. \
+    \
+    This API allows you to send us real-time events from your website and customer systems, \
+    and configure webhooks to receive our outbound lead data.\
+\
+    ## Authentication\
+    All requests require a valid `client_id` provided as a query parameter.\
+\
+    ## Event Types\
+    - **sign_up**: New user registrations or form submissions\
+    - **meeting_booked**: Scheduled meetings or calls\
+    - **paying_customer**: Successful conversions to paid customers\
+    - **website_visitor**: Anonymous or identified website visitors\
+    - **dnc**: Do Not Contact list additions\
+\
+    ## Email vs Domain Targeting\
+    Most endpoints support both individual (email) and company-wide (domain) targeting:\
+    - Use `email` field for individual contact attribution\
+    - Use `domain` field for company-wide attribution\
+  contact:\
+    name: Sales Automation Systems\
+    url: https://salesautomation.systems\
+    email: support@salesautomation.systems\
+  license:\
+    name: MIT\
+    url: https://opensource.org/licenses/MIT\
+\
+servers:\
+  - url: https://api.salesautomation.systems\
+    description: Production server\
+\
+paths:\
+  /webhook/attribution:\
+    post:\
+      summary: Track Attribution Events\
+      description: |\
+        Send real-time events to track user actions and attribution data. \
+        Supports multiple event types with either email or domain-based targeting.\
+      operationId: trackAttribution\
+      tags:\
+        - Attribution Events\
+      parameters:\
+        - $ref: '#/components/parameters/ClientId'\
+      requestBody:\
+        required: true\
+        content:\
+          application/json:\
+            schema:\
+              oneOf:\
+                - $ref: '#/components/schemas/EmailAttributionEvent'\
+                - $ref: '#/components/schemas/DomainAttributionEvent'\
+            examples:\
+              signup_email:\
+                summary: User Sign Up (Email)\
+                value:\
+                  email: "user@example.com"\
+                  event_type: "sign_up"\
+                  event_time: "2025-06-30T14:00:04.096Z"\
+                  first_name: "John"\
+                  last_name: "Doe"\
+                  company_name: "Example Corp"\
+                  campaign_id: "summer_2025"\
+              meeting_booked_email:\
+                summary: Meeting Booked (Email)\
+                value:\
+                  email: "prospect@example.com"\
+                  event_type: "meeting_booked"\
+                  event_time: "2025-06-30T15:30:00.000Z"\
+                  first_name: "Jane"\
+                  last_name: "Smith"\
+                  company_name: "Tech Startup Inc"\
+              paying_customer_email:\
+                summary: Paying Customer (Email)\
+                value:\
+                  email: "customer@example.com"\
+                  event_type: "paying_customer"\
+                  event_time: "2025-06-30T16:45:30.123Z"\
+                  first_name: "Michael"\
+                  last_name: "Johnson"\
+                  company_name: "Enterprise Solutions LLC"\
+                  campaign_id: "enterprise_q2"\
+              website_visitor_email:\
+                summary: Website Visitor (Email)\
+                value:\
+                  email: "visitor@example.com"\
+                  event_type: "website_visitor"\
+                  event_time: "2025-06-30T10:15:22.456Z"\
+                  company_name: "Potential Client Co"\
+              dnc_email:\
+                summary: Do Not Contact (Email)\
+                value:\
+                  email: "optout@example.com"\
+                  event_type: "dnc"\
+                  event_time: "2025-06-30T11:20:15.789Z"\
+              dnc_domain:\
+                summary: Do Not Contact (Domain)\
+                value:\
+                  domain: "competitor.com"\
+                  event_type: "dnc"\
+                  event_time: "2025-06-30T11:25:45.321Z"\
+      responses:\
+        '200':\
+          description: Event successfully received and processed\
+          content:\
+            application/json:\
+              schema:\
+                $ref: '#/components/schemas/SuccessResponse'\
+              example:\
+                status: "success"\
+                message: "Event processed successfully"\
+                event_id: "evt_abc123def456"\
+        '400':\
+          description: Invalid request data\
+          content:\
+            application/json:\
+              schema:\
+                $ref: '#/components/schemas/ErrorResponse'\
+              example:\
+                status: "error"\
+                message: "Invalid event_type. Must be one of: sign_up, meeting_booked, paying_customer, website_visitor, dnc"\
+                code: "INVALID_EVENT_TYPE"\
+        '401':\
+          description: Invalid or missing client_id\
+          content:\
+            application/json:\
+              schema:\
+                $ref: '#/components/schemas/ErrorResponse'\
+              example:\
+                status: "error"\
+                message: "Invalid client_id provided"\
+                code: "INVALID_CLIENT_ID"\
+        '422':\
+          description: Missing required fields\
+          content:\
+            application/json:\
+              schema:\
+                $ref: '#/components/schemas/ErrorResponse'\
+              example:\
+                status: "error"\
+                message: "Either email or domain field is required"\
+                code: "MISSING_REQUIRED_FIELD"\
+\
+  /webhook/configure:\
+    post:\
+      summary: Configure Webhook Endpoint\
+      description: |\
+        Register a webhook URL where we'll send real-time lead data and email engagement events.\
+        Your endpoint should accept POST requests with JSON payloads.\
+      operationId: configureWebhook\
+      tags:\
+        - Webhook Configuration\
+      parameters:\
+        - $ref: '#/components/parameters/ClientId'\
+      requestBody:\
+        required: true\
+        content:\
+          application/json:\
+            schema:\
+              $ref: '#/components/schemas/WebhookConfig'\
+            example:\
+              webhook_url: "https://your-domain.com/webhooks/sales-automation"\
+      responses:\
+        '200':\
+          description: Webhook successfully configured\
+          content:\
+            application/json:\
+              schema:\
+                $ref: '#/components/schemas/SuccessResponse'\
+              example:\
+                status: "success"\
+                message: "Webhook configured successfully"\
+                webhook_id: "wh_xyz789abc123"\
+        '400':\
+          description: Invalid webhook URL\
+          content:\
+            application/json:\
+              schema:\
+                $ref: '#/components/schemas/ErrorResponse'\
+              example:\
+                status: "error"\
+                message: "Invalid webhook URL format or unreachable endpoint"\
+                code: "INVALID_WEBHOOK_URL"\
+\
+components:\
+  parameters:\
+    ClientId:\
+      name: client_id\
+      in: query\
+      required: true\
+      description: Your unique client identifier provided by Sales Automation Systems\
+      schema:\
+        type: string\
+        format: uuid\
+        example: "550e8400-e29b-41d4-a716-446655440000"\
+\
+  schemas:\
+    EmailAttributionEvent:\
+      type: object\
+      required:\
+        - email\
+        - event_type\
+        - event_time\
+      properties:\
+        email:\
+          type: string\
+          format: email\
+          description: Email address of the contact\
+          example: "user@example.com"\
+        event_type:\
+          $ref: '#/components/schemas/EventType'\
+        event_time:\
+          type: string\
+          format: date-time\
+          description: ISO 8601 timestamp when the event occurred\
+          example: "2025-06-30T14:00:04.096Z"\
+        first_name:\
+          type: string\
+          description: Contact's first name (optional but recommended)\
+          example: "John"\
+        last_name:\
+          type: string\
+          description: Contact's last name (optional but recommended)\
+          example: "Doe"\
+        company_name:\
+          type: string\
+          description: Name of the contact's company\
+          example: "Example Corporation"\
+        campaign_id:\
+          type: string\
+          description: Internal campaign or source identifier\
+          example: "summer_campaign_2025"\
+\
+    DomainAttributionEvent:\
+      type: object\
+      required:\
+        - domain\
+        - event_type\
+        - event_time\
+      properties:\
+        domain:\
+          type: string\
+          format: hostname\
+          description: Company domain for company-wide attribution\
+          example: "example.com"\
+        event_type:\
+          $ref: '#/components/schemas/EventType'\
+        event_time:\
+          type: string\
+          format: date-time\
+          description: ISO 8601 timestamp when the event occurred\
+          example: "2025-06-30T14:00:04.096Z"\
+        company_name:\
+          type: string\
+          description: Name of the company (optional)\
+          example: "Example Corporation"\
+        campaign_id:\
+          type: string\
+          description: Internal campaign or source identifier\
+          example: "enterprise_outreach_q2"\
+\
+    EventType:\
+      type: string\
+      enum:\
+        - sign_up\
+        - meeting_booked\
+        - paying_customer\
+        - website_visitor\
+        - dnc\
+      description: |\
+        Type of attribution event:\
+        - **sign_up**: New user registration or form submission\
+        - **meeting_booked**: Scheduled meeting or demo\
+        - **paying_customer**: Successful conversion to paid customer\
+        - **website_visitor**: Website visit or page view\
+        - **dnc**: Add to Do Not Contact list\
+      example: "sign_up"\
+\
+    WebhookConfig:\
+      type: object\
+      required:\
+        - webhook_url\
+      properties:\
+        webhook_url:\
+          type: string\
+          format: uri\
+          description: HTTPS URL where we'll send webhook data\
+          example: "https://your-domain.com/webhooks/sales-automation"\
+\
+    SuccessResponse:\
+      type: object\
+      properties:\
+        status:\
+          type: string\
+          enum: [success]\
+          example: "success"\
+        message:\
+          type: string\
+          example: "Operation completed successfully"\
+        event_id:\
+          type: string\
+          description: Unique identifier for the processed event (when applicable)\
+          example: "evt_abc123def456"\
+        webhook_id:\
+          type: string\
+          description: Unique identifier for the configured webhook (when applicable)\
+          example: "wh_xyz789abc123"\
+\
+    ErrorResponse:\
+      type: object\
+      properties:\
+        status:\
+          type: string\
+          enum: [error]\
+          example: "error"\
+        message:\
+          type: string\
+          description: Human-readable error description\
+          example: "Invalid request parameters"\
+        code:\
+          type: string\
+          description: Machine-readable error code\
+          example: "INVALID_PARAMETERS"\
+        details:\
+          type: object\
+          description: Additional error details (optional)\
+          additionalProperties: true\
+\
+    # Outbound webhook payload schema (for documentation purposes)\
+    OutboundWebhookPayload:\
+      type: object\
+      description: |\
+        **This is the payload format we send TO your webhook endpoint.**\
+        \
+        Configure your webhook URL using the `/webhook/configure` endpoint to receive this data.\
+      properties:\
+        email:\
+          type: string\
+          format: email\
+          description: Email address of the lead\
+          example: "Taylor@SalesAutomation.Systems"\
+        email_sent_time:\
+          type: string\
+          format: date-time\
+          description: ISO 8601 timestamp when the email was sent\
+          example: "2025-03-20T14:30:00Z"\
+        campaign:\
+          type: string\
+          description: Name of the email campaign\
+          example: "Q2 Enterprise Outreach"\
+        firstName:\
+          type: string\
+          description: Lead's first name\
+          example: "Taylor"\
+        lastName:\
+          type: string\
+          description: Lead's last name\
+          example: "Haren"\
+        companyName:\
+          type: string\
+          description: Lead's company name\
+          example: "Sales Automation Systems"\
+        companyDomain:\
+          type: string\
+          format: hostname\
+          description: Lead's company domain\
+          example: "salesautomation.systems"\
+        linkedinProfileUrl:\
+          type: string\
+          format: uri\
+          description: LinkedIn profile URL (when available)\
+          example: "https://www.linkedin.com/in/taylorharen/"\
+        event_type:\
+          type: string\
+          enum:\
+            - email_sent\
+            - email_opened\
+            - email_clicked\
+            - email_replied\
+          description: Type of email engagement event\
+          example: "email_sent"\
+\
+  securitySchemes:\
+    ClientIdAuth:\
+      type: apiKey\
+      in: query\
+      name: client_id\
+      description: Client ID provided as a query parameter\
+\
+security:\
+  - ClientIdAuth: []\
+\
+tags:\
+  - name: Attribution Events\
+    description: Track user events and attribution data in real-time\
+  - name: Webhook Configuration\
+    description: Configure endpoints to receive our outbound lead data\
+\
+externalDocs:\
+  description: Sales Automation Systems Documentation\
+  url: https://docs.salesautomation.systems}
